@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydev.canvastest.domain.model.PointF
 import com.skydev.canvastest.domain.model.StrokeData
@@ -117,7 +118,7 @@ private enum class DrawTool(val icon: ImageVector, val label: String) {
 
 @Composable
 fun NoteTakingScreen(
-    viewModel: NoteTakingViewModel,
+    viewModel: NoteTakingViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     id: String? = null,
     onBack: () -> Unit,

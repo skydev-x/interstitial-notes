@@ -13,7 +13,6 @@ import com.skydev.canvastest.ui.feature.timeline.TimelineScreen
 @Composable
 fun AppNavGraph(
     modifier: Modifier = Modifier,
-    viewModel: NoteTakingViewModel
 ) {
     val navController = rememberNavController()
 
@@ -26,7 +25,6 @@ fun AppNavGraph(
         composable<AppRoutes.NoteTaking> {
             val id = it.toRoute<AppRoutes.NoteTaking>().id
             NoteTakingScreen(
-                viewModel = viewModel,
                 id = id,
             ) {
                 navController.navigateUp()
