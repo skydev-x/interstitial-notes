@@ -31,12 +31,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 @HiltViewModel
 class NoteTakingViewModel @Inject constructor(
     private val app: Application,
     private val noteRepository: NoteRepository,
-    private val savedStateHandle: SavedStateHandle
 ) : AndroidViewModel(app) {
 
     private val _strokes = MutableStateFlow<List<StrokeData>>(emptyList())
@@ -60,7 +61,6 @@ class NoteTakingViewModel @Inject constructor(
 
                 if (note != null) {
                     _strokes.value = result
-
                     emit(
                         NoteUi(
                             id = note.id,
@@ -94,7 +94,6 @@ class NoteTakingViewModel @Inject constructor(
         stack.addLast(_strokes.value.last())
         _strokes.update { it.dropLast(1) }
         _canRedo.value = true
-
         persist()
     }
 
@@ -104,7 +103,6 @@ class NoteTakingViewModel @Inject constructor(
         val stroke = stack.removeLast()
         _strokes.update { it + stroke }
         _canRedo.value = stack.isNotEmpty()
-
         persist()
     }
 
@@ -115,26 +113,21 @@ class NoteTakingViewModel @Inject constructor(
         persist()
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     fun persist() {
         val snapshot = _strokes.value
-
         viewModelScope.launch(Dispatchers.IO) {
             val currentTime = System.currentTimeMillis()
-
-            val existingId = id.value
-
+            val existingId = id.value ?: Uuid.generateV7().toString()
             val note = Notes(
-                id = existingId ?: "",
+                id = existingId,
                 title = "Untitled_$currentTime",
                 createdAt = currentTime,
                 updatedAt = currentTime,
                 strokeData = snapshot
             )
-
             val newId = noteRepository.insertNote(note)
-
             id.value = newId
-
             saveStrokesBinary(app, newId, snapshot)
         }
     }

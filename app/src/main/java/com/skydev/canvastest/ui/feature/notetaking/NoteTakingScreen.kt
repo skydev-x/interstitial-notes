@@ -122,7 +122,7 @@ fun NoteTakingScreen(
     id: String? = null,
     onBack: () -> Unit,
 ) {
-    LaunchedEffect(Unit) {
+    LaunchedEffect(id) {
         if (id != null) {
             viewModel.load(id)
         }

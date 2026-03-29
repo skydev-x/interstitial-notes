@@ -8,9 +8,17 @@ import javax.inject.Inject
 class NoteRepositoryImpl @Inject constructor(
     private val noteDao: NoteDao
 ) : NoteRepository {
-    override suspend fun insertNote(note: Notes) : String {
-        noteDao.insertNote(note)
+    override suspend fun insertNote(note: Notes): String {
         val id = note.id
+        if (noteDao.doesExist(id)) {
+            noteDao.insertNote(
+                note.copy(
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        } else {
+            noteDao.insertNote(note)
+        }
         return id
     }
 
