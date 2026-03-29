@@ -129,7 +129,7 @@ fun NoteTakingScreen(
         onRedo = viewModel::redo,
         onClear = viewModel::clear,
         canRedo = canRedo,
-        onSave = {},
+        onSave = viewModel::persist,
         onShare = {},
         onExport = {},
         onRename = {},

@@ -11,8 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.skydev.canvastest.ui.feature.notetaking.NoteTakingScreen
 import com.skydev.canvastest.ui.feature.notetaking.NoteTakingViewModel
+import com.skydev.canvastest.ui.nav.AppNavGraph
 import com.skydev.canvastest.ui.theme.CanvasTestTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     val viewModel: NoteTakingViewModel by viewModels()
 
@@ -21,14 +24,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CanvasTestTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    NoteTakingScreen(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(innerPadding)
-                    ){
-
-                    }
-                }
+                AppNavGraph(viewModel = viewModel)
             }
         }
     }

@@ -3,9 +3,12 @@ package com.skydev.canvastest.ui.feature.notetaking
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.skydev.canvastest.data.model.Notes
 import com.skydev.canvastest.domain.loadStrokesBinary
 import com.skydev.canvastest.domain.model.StrokeData
+import com.skydev.canvastest.domain.repo.NoteRepository
 import com.skydev.canvastest.domain.saveStrokesBinary
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,9 +16,12 @@ import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class NoteTakingViewModel(
-    private val app: Application
+@HiltViewModel
+class NoteTakingViewModel @Inject constructor(
+    private val app: Application,
+    private val noteRepository: NoteRepository
 ) : AndroidViewModel(app) {
     private val _strokes = MutableStateFlow<List<StrokeData>>(emptyList())
     private val stack = ArrayDeque<StrokeData>(emptyList())
@@ -64,10 +70,16 @@ class NoteTakingViewModel(
         persist()
     }
 
-    private fun persist() {
+    fun persist() {
         val snapshot = _strokes.value
         viewModelScope.launch(Dispatchers.IO) {
             saveStrokesBinary(getApplication(), snapshot)
+            noteRepository.insertNote(Notes(
+                title = "Untitled",
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                strokeData = snapshot
+            ))
         }
     }
 
