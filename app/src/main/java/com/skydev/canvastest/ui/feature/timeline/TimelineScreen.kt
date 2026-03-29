@@ -93,6 +93,9 @@ fun TimelineScreen(
     viewModel: TimeLineViewModel = hiltViewModel(),
 ) {
     val notes = viewModel.notes.collectAsStateWithLifecycle().value
+    LaunchedEffect(Unit) {
+        viewModel.onRefresh()
+    }
     Scaffold(
         containerColor = Surface0,
         topBar = {

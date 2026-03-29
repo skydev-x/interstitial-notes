@@ -30,4 +30,9 @@ class NoteRepositoryImpl @Inject constructor(
         return noteDao.getNoteById(id)
     }
 
+    override suspend fun deleteNote(id: String) {
+        noteDao.deleteNoteById(id)
+    }
+
+
 }

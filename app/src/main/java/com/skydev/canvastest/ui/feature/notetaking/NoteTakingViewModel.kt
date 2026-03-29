@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -33,14 +34,14 @@ class NoteTakingViewModel @Inject constructor(
     private val _canRedo = MutableStateFlow(false)
     val canRedo = _canRedo.asStateFlow()
 
-    private val _noteUi = MutableStateFlow<NoteUi?>(null)  // ← owned directly
+    private val _noteUi = MutableStateFlow<NoteUi?>(null)
     val noteUi: StateFlow<NoteUi?> = _noteUi.asStateFlow()
 
     private var cachedNote: Notes? = null
     private var currentId: String? = null
 
     fun load(id: String) {
-        if (currentId == id) return   // avoid duplicate loads
+        if (currentId == id) return
         currentId = id
         viewModelScope.launch(Dispatchers.IO) {
             val note = noteRepository.getNoteById(id) ?: return@launch
@@ -67,9 +68,9 @@ class NoteTakingViewModel @Inject constructor(
                 strokeData = snapshot,
             )
             val newId = noteRepository.insertNote(updated)
-            cachedNote  = updated.copy(id = newId)   // ← keep cache fresh
+            cachedNote  = updated.copy(id = newId)
             currentId   = newId
-            _noteUi.value = cachedNote!!.toUi(snapshot)  // ← update UI immediately
+            _noteUi.value = cachedNote!!.toUi(snapshot)
         }
     }
 
@@ -89,9 +90,23 @@ class NoteTakingViewModel @Inject constructor(
                 strokeData = snapshot,
             )
             val newId = noteRepository.insertNote(note)
-            cachedNote = note.copy(id = newId)   // ← keep cache fresh
+            cachedNote = note.copy(id = newId)
             currentId  = newId
             saveStrokesBinary(app, newId, snapshot)
+        }
+    }
+
+    fun delete(onDone: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO){
+            cachedNote?.let { noteRepository.deleteNote(it.id) }
+            withContext(Dispatchers.Main){
+                cachedNote = null
+                currentId = null
+                _noteUi.value = null
+                _strokes.value = emptyList()
+                stack.clear()
+                onDone()
+            }
         }
     }
 
@@ -123,8 +138,6 @@ class NoteTakingViewModel @Inject constructor(
         _strokes.value = emptyList()
         persist()
     }
-
-    // ── Helper ───────────────────────────────────────────────────────────────
 
     private fun Notes.toUi(strokes: List<StrokeData>) = NoteUi(
         id = id,

@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.repo.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -16,21 +19,31 @@ class TimeLineViewModel @Inject constructor(
     private val noteRepository: NoteRepository
 ) : ViewModel() {
 
-    val notes = flow {
-        val notes = noteRepository.getNotes()
-        emit(notes)
+    val refreshKey = MutableStateFlow(0)
+
+    fun onRefresh() {
+        refreshKey.value++
     }
-        .map {
-            it.map {
-                NoteUi(
-                    id = it.id,
-                    title = it.title,
-                    createdAt = it.createdAt,
-                    updatedAt = it.updatedAt,
-                    strokes = it.strokeData
-                )
-            }.sortedByDescending { it.updatedAt }
+
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val notes = refreshKey.flatMapLatest {
+        flow {
+            val notes = noteRepository.getNotes()
+            emit(notes)
         }
+            .map {
+                it.map {
+                    NoteUi(
+                        id = it.id,
+                        title = it.title,
+                        createdAt = it.createdAt,
+                        updatedAt = it.updatedAt,
+                        strokes = it.strokeData
+                    )
+                }.sortedByDescending { it.updatedAt }
+            }
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 }

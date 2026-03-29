@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -137,7 +138,7 @@ fun NoteTakingScreen(
     val strokes by viewModel.strokes.collectAsStateWithLifecycle()
     val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
     NoteTakingUi(
-        projectTitle = "${noteUi?.title}",
+        projectTitle = noteUi?.title ?: run { "Untitled" },
         strokes = strokes,
         onBack = onBack,
         onUndo = viewModel::undo,
@@ -146,7 +147,9 @@ fun NoteTakingScreen(
         canRedo = canRedo,
         onSave = viewModel::persist,
         onShare = {},
-        onExport = {},
+        onDelete = {
+            viewModel.delete(onBack)
+        },
         onRename = viewModel::rename,
         onStrokeComplete = viewModel::onStrokeComplete,
         modifier = modifier,
@@ -166,7 +169,7 @@ fun NoteTakingUi(
     onClear: () -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
-    onExport: () -> Unit,
+    onDelete: () -> Unit,
     onRename: (String) -> Unit,
     onStrokeComplete: (StrokeData) -> Unit,
     canUndo: Boolean = strokes.isNotEmpty(),
@@ -210,7 +213,7 @@ fun NoteTakingUi(
                 onBack = onBack,
                 onSave = { menuExpanded = false; onSave() },
                 onShare = { menuExpanded = false; onShare() },
-                onExport = { menuExpanded = false; onExport() },
+                onDelete = { menuExpanded = false; onDelete() },
                 onRename = {
                     menuExpanded = false
                     renameDialogShown = true
@@ -317,7 +320,7 @@ private fun DrawingTopBar(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
-    onExport: () -> Unit,
+    onDelete: () -> Unit,
     onRename: () -> Unit,
 ) {
     TopAppBar(
@@ -356,7 +359,7 @@ private fun DrawingTopBar(
                 ) {
                     StyledMenuItem(Icons.Rounded.Check, "Save", onSave)
                     StyledMenuItem(Icons.Rounded.Share, "Share", onShare)
-                    StyledMenuItem(Icons.Rounded.Face, "Export as PNG", onExport)
+                    StyledMenuItem(Icons.Rounded.Delete, "Delete", onDelete)
                     HorizontalDivider(
                         color = StrokeColor,
                         modifier = Modifier.padding(vertical = 4.dp)
