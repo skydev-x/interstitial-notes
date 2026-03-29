@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -358,7 +359,12 @@ private fun NoteCard(
             ) {
                 MetaChip(
                     icon = Icons.Rounded.Done,
-                    label = formatDate(note.createdAt),
+                    label = formatDate(note.updatedAt),
+                )
+
+                MetaChip(
+                    icon = Icons.Rounded.Face,
+                    label = note.createdAt.toFormattedDate(),
                 )
             }
         }
@@ -400,4 +406,8 @@ private fun formatDate(timestamp: Long): String {
 
         else -> SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(timestamp))
     }
+}
+
+fun Long.toFormattedDate(): String {
+  return SimpleDateFormat("hh : mm - d MMM yyyy", Locale.getDefault()).format(Date(this))
 }

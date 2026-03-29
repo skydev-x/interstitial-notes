@@ -9,6 +9,7 @@ import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.model.StrokeData
 import com.skydev.canvastest.domain.repo.NoteRepository
 import com.skydev.canvastest.domain.saveStrokesBinary
+import com.skydev.canvastest.ui.feature.timeline.toFormattedDate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,7 +85,7 @@ class NoteTakingViewModel @Inject constructor(
                 updatedAt  = System.currentTimeMillis(),
             ) ?: Notes(
                 id         = existingId,
-                title      = "Untitled_${System.currentTimeMillis()}",
+                title      = System.currentTimeMillis().toFormattedDate(),
                 createdAt  = System.currentTimeMillis(),
                 updatedAt  = System.currentTimeMillis(),
                 strokeData = snapshot,

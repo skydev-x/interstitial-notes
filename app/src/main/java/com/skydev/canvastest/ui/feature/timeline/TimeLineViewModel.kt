@@ -32,8 +32,8 @@ class TimeLineViewModel @Inject constructor(
             val notes = noteRepository.getNotes()
             emit(notes)
         }
-            .map {
-                it.map {
+            .map { list ->
+                list.map {
                     NoteUi(
                         id = it.id,
                         title = it.title,
@@ -41,7 +41,7 @@ class TimeLineViewModel @Inject constructor(
                         updatedAt = it.updatedAt,
                         strokes = it.strokeData
                     )
-                }.sortedByDescending { it.updatedAt }
+                }.sortedByDescending { it.createdAt }
             }
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
