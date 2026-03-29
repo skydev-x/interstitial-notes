@@ -9,6 +9,8 @@ import com.skydev.canvastest.domain.saveStrokesBinary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -16,6 +18,10 @@ class NoteTakingViewModel(
     private val app: Application
 ) : AndroidViewModel(app) {
     private val _strokes = MutableStateFlow<List<StrokeData>>(emptyList())
+    private val stack = ArrayDeque<StrokeData>(emptyList())
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo = _canRedo.asStateFlow()
+
     val strokes = _strokes.asStateFlow()
 
     init {
@@ -24,19 +30,36 @@ class NoteTakingViewModel(
         }
     }
 
-    /** Called by Canvas on every pen-up */
     fun onStrokeComplete(stroke: StrokeData) {
+        stack.clear()
+        _canRedo.value = false
         _strokes.update { it + stroke }
         persist()
     }
 
     fun undo() {
-        if (_strokes.value.isEmpty()) return
-        _strokes.update { it.dropLast(1) }
-        persist()
+        viewModelScope.launch {
+            if (_strokes.value.isEmpty()) return@launch
+            stack.addLast(_strokes.value.last())
+            _canRedo.value = true
+            _strokes.update { it.dropLast(1) }
+            persist()
+        }
+    }
+
+    fun redo() {
+        viewModelScope.launch {
+            if (stack.isEmpty()) return@launch
+            _strokes.update { it + stack.last() }
+            stack.removeLast()
+            _canRedo.value = stack.isNotEmpty()
+            persist()
+        }
     }
 
     fun clear() {
+        stack.clear()
+        _canRedo.value = false
         _strokes.value = emptyList()
         persist()
     }

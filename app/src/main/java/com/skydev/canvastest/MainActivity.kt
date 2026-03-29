@@ -25,7 +25,9 @@ class MainActivity : ComponentActivity() {
                     NoteTakingScreen(
                         viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding)
-                    )
+                    ){
+
+                    }
                 }
             }
         }
