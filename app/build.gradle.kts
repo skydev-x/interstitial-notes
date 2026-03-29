@@ -59,6 +59,7 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

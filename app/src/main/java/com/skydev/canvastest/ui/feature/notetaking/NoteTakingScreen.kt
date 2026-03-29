@@ -106,6 +106,7 @@ import com.skydev.canvastest.ui.theme.Surface3
 import com.skydev.canvastest.ui.theme.TextPri
 import com.skydev.canvastest.ui.theme.TextSec
 import com.skydev.canvastest.ui.utils.isForAll
+import com.skydev.canvastest.ui.utils.isForStylus
 
 
 private val Palette = listOf(
@@ -691,7 +692,7 @@ fun SPenDrawingCanvas(
                             val event = awaitPointerEvent()
                             val change = event.changes.first()
 
-                            if (change.type.isForAll()) {
+                            if (change.type.isForStylus()) {
                                 val pos = change.position
                                 when {
                                     change.pressed && currentPath == null -> {
