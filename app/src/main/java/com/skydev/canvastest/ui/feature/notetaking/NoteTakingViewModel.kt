@@ -2,7 +2,6 @@ package com.skydev.canvastest.ui.feature.notetaking
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.Notes
 import com.skydev.canvastest.domain.loadStrokesBinary
@@ -12,24 +11,11 @@ import com.skydev.canvastest.domain.repo.NoteRepository
 import com.skydev.canvastest.domain.saveStrokesBinary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMap
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.lastOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -47,38 +33,66 @@ class NoteTakingViewModel @Inject constructor(
     private val _canRedo = MutableStateFlow(false)
     val canRedo = _canRedo.asStateFlow()
 
-    private val id = MutableStateFlow<String?>(null)
+    private val _noteUi = MutableStateFlow<NoteUi?>(null)  // ← owned directly
+    val noteUi: StateFlow<NoteUi?> = _noteUi.asStateFlow()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val noteUi: StateFlow<NoteUi?> = id
-        .flatMapLatest { noteId ->
-            if (noteId == null) return@flatMapLatest flowOf(null)
-
-            flow {
-                val result = loadStrokesBinary(app, noteId)
-
-                val note = noteRepository.getNoteById(noteId)
-
-                if (note != null) {
-                    _strokes.value = result
-                    emit(
-                        NoteUi(
-                            id = note.id,
-                            title = note.title,
-                            createdAt = note.createdAt,
-                            updatedAt = note.updatedAt,
-                            strokes = result
-                        )
-                    )
-                } else {
-                    emit(null)
-                }
-            }.flowOn(Dispatchers.IO)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    private var cachedNote: Notes? = null
+    private var currentId: String? = null
 
     fun load(id: String) {
-        this.id.value = id
+        if (currentId == id) return   // avoid duplicate loads
+        currentId = id
+        viewModelScope.launch(Dispatchers.IO) {
+            val note = noteRepository.getNoteById(id) ?: return@launch
+            val strokes = loadStrokesBinary(app, id)
+            cachedNote = note
+            _strokes.value = strokes
+            _noteUi.value = note.toUi(strokes)
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    fun rename(title: String) {
+        viewModelScope.launch {
+            val snapshot = _strokes.value
+            val existingId = cachedNote?.id ?: Uuid.generateV7().toString()
+            val updated = cachedNote?.copy(
+                title     = title,
+                updatedAt = System.currentTimeMillis(),
+            ) ?: Notes(
+                id        = existingId,
+                title     = title,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                strokeData = snapshot,
+            )
+            val newId = noteRepository.insertNote(updated)
+            cachedNote  = updated.copy(id = newId)   // ← keep cache fresh
+            currentId   = newId
+            _noteUi.value = cachedNote!!.toUi(snapshot)  // ← update UI immediately
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    fun persist() {
+        val snapshot = _strokes.value
+        viewModelScope.launch(Dispatchers.IO) {
+            val existingId = cachedNote?.id ?: Uuid.generateV7().toString()
+            val note = cachedNote?.copy(
+                strokeData = snapshot,
+                updatedAt  = System.currentTimeMillis(),
+            ) ?: Notes(
+                id         = existingId,
+                title      = "Untitled_${System.currentTimeMillis()}",
+                createdAt  = System.currentTimeMillis(),
+                updatedAt  = System.currentTimeMillis(),
+                strokeData = snapshot,
+            )
+            val newId = noteRepository.insertNote(note)
+            cachedNote = note.copy(id = newId)   // ← keep cache fresh
+            currentId  = newId
+            saveStrokesBinary(app, newId, snapshot)
+        }
     }
 
     fun onStrokeComplete(stroke: StrokeData) {
@@ -90,7 +104,6 @@ class NoteTakingViewModel @Inject constructor(
 
     fun undo() {
         if (_strokes.value.isEmpty()) return
-
         stack.addLast(_strokes.value.last())
         _strokes.update { it.dropLast(1) }
         _canRedo.value = true
@@ -99,9 +112,7 @@ class NoteTakingViewModel @Inject constructor(
 
     fun redo() {
         if (stack.isEmpty()) return
-
-        val stroke = stack.removeLast()
-        _strokes.update { it + stroke }
+        _strokes.update { it + stack.removeLast() }
         _canRedo.value = stack.isNotEmpty()
         persist()
     }
@@ -113,22 +124,13 @@ class NoteTakingViewModel @Inject constructor(
         persist()
     }
 
-    @OptIn(ExperimentalUuidApi::class)
-    fun persist() {
-        val snapshot = _strokes.value
-        viewModelScope.launch(Dispatchers.IO) {
-            val currentTime = System.currentTimeMillis()
-            val existingId = id.value ?: Uuid.generateV7().toString()
-            val note = Notes(
-                id = existingId,
-                title = "Untitled_$currentTime",
-                createdAt = currentTime,
-                updatedAt = currentTime,
-                strokeData = snapshot
-            )
-            val newId = noteRepository.insertNote(note)
-            id.value = newId
-            saveStrokesBinary(app, newId, snapshot)
-        }
-    }
+    // ── Helper ───────────────────────────────────────────────────────────────
+
+    private fun Notes.toUi(strokes: List<StrokeData>) = NoteUi(
+        id = id,
+        title = title,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        strokes = strokes,
+    )
 }

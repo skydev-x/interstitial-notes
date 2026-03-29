@@ -7,7 +7,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.skydev.canvastest.ui.feature.notetaking.NoteTakingScreen
-import com.skydev.canvastest.ui.feature.notetaking.NoteTakingViewModel
 import com.skydev.canvastest.ui.feature.timeline.TimelineScreen
 
 @Composable

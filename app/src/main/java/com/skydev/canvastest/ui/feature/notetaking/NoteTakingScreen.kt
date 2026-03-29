@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
@@ -50,6 +52,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -60,7 +64,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -81,6 +84,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -118,8 +123,8 @@ private enum class DrawTool(val icon: ImageVector, val label: String) {
 
 @Composable
 fun NoteTakingScreen(
-    viewModel: NoteTakingViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
+    viewModel: NoteTakingViewModel = hiltViewModel(),
     id: String? = null,
     onBack: () -> Unit,
 ) {
@@ -142,7 +147,7 @@ fun NoteTakingScreen(
         onSave = viewModel::persist,
         onShare = {},
         onExport = {},
-        onRename = {},
+        onRename = viewModel::rename,
         onStrokeComplete = viewModel::onStrokeComplete,
         modifier = modifier,
     )
@@ -162,7 +167,7 @@ fun NoteTakingUi(
     onSave: () -> Unit,
     onShare: () -> Unit,
     onExport: () -> Unit,
-    onRename: () -> Unit,
+    onRename: (String) -> Unit,
     onStrokeComplete: (StrokeData) -> Unit,
     canUndo: Boolean = strokes.isNotEmpty(),
 ) {
@@ -182,6 +187,19 @@ fun NoteTakingUi(
         )
     }
 
+    var renameDialogShown by remember { mutableStateOf(false) }
+
+    if (renameDialogShown) {
+        RenameDialog(
+            currentTitle = projectTitle,
+            onDismiss = { renameDialogShown = false },
+            onConfirm = { newTitle ->
+                renameDialogShown = false
+                onRename(newTitle)
+            },
+        )
+    }
+
     Scaffold(
         containerColor = Surface0,
         topBar = {
@@ -193,7 +211,10 @@ fun NoteTakingUi(
                 onSave = { menuExpanded = false; onSave() },
                 onShare = { menuExpanded = false; onShare() },
                 onExport = { menuExpanded = false; onExport() },
-                onRename = { menuExpanded = false; onRename() },
+                onRename = {
+                    menuExpanded = false
+                    renameDialogShown = true
+                },
             )
         },
     ) { padding ->
@@ -340,7 +361,9 @@ private fun DrawingTopBar(
                         color = StrokeColor,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
-                    StyledMenuItem(Icons.Rounded.Star, "Rename project", onRename)
+                    StyledMenuItem(Icons.Rounded.Star, "Rename project", {
+                        onRename()
+                    })
                 }
             }
         },
@@ -723,4 +746,62 @@ fun SPenDrawingCanvas(
             }
         }
     }
+}
+
+@Composable
+fun RenameDialog(
+    currentTitle: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(currentTitle) }
+    val isValid = text.isNotBlank()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface2,
+        titleContentColor = TextPri,
+        textContentColor = TextSec,
+        iconContentColor = Accent,
+        icon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+        title = { Text("Rename note", fontWeight = FontWeight.SemiBold) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                placeholder = { Text("Note title", color = TextSec) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = StrokeColor,
+                    focusedTextColor = TextPri,
+                    unfocusedTextColor = TextPri,
+                    cursorColor = Accent,
+                    focusedContainerColor = Surface3,
+                    unfocusedContainerColor = Surface3,
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done,
+                    capitalization = KeyboardCapitalization.Sentences,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { if (isValid) onConfirm(text.trim()) }
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (isValid) onConfirm(text.trim()) }, enabled = isValid) {
+                Text(
+                    "Rename",
+                    color = if (isValid) Accent else TextSec,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSec) }
+        },
+    )
 }
