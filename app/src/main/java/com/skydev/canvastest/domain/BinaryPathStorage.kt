@@ -60,14 +60,14 @@ fun decodeStrokes(bytes: ByteArray): List<StrokeData> {
     }
 }
 
-suspend fun saveStrokesBinary(context: Context, strokes: List<StrokeData>) =
+suspend fun saveStrokesBinary(context: Context,id : String ,strokes: List<StrokeData>) =
     withContext(Dispatchers.IO) {
-        File(context.filesDir, BIN_FILE).writeBytes(encodeStrokes(strokes))
+        File(context.filesDir, "${id}_$BIN_FILE").writeBytes(encodeStrokes(strokes))
     }
 
-suspend fun loadStrokesBinary(context: Context): List<StrokeData> =
+suspend fun loadStrokesBinary(context: Context,id : String): List<StrokeData> =
     withContext(Dispatchers.IO) {
-        val file = File(context.filesDir, BIN_FILE)
+        val file = File(context.filesDir, "${id}_$BIN_FILE")
         if (!file.exists()) return@withContext emptyList()
         try { decodeStrokes(file.readBytes()).also {
             Log.d("loadStrokesBinary", "Loaded ${it} bytes")

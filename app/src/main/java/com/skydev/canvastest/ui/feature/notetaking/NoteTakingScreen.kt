@@ -59,6 +59,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -117,12 +119,19 @@ private enum class DrawTool(val icon: ImageVector, val label: String) {
 fun NoteTakingScreen(
     viewModel: NoteTakingViewModel,
     modifier: Modifier = Modifier,
+    id: String? = null,
     onBack: () -> Unit,
 ) {
+    LaunchedEffect(Unit) {
+        if (id != null) {
+            viewModel.load(id)
+        }
+    }
+    val noteUi by viewModel.noteUi.collectAsStateWithLifecycle()
     val strokes by viewModel.strokes.collectAsStateWithLifecycle()
     val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
     NoteTakingUi(
-        projectTitle = "Untitled",
+        projectTitle = "${noteUi?.title}",
         strokes = strokes,
         onBack = onBack,
         onUndo = viewModel::undo,

@@ -9,7 +9,9 @@ sealed interface AppRoutes {
     object Timeline : AppRoutes
 
     @Serializable
-    object NoteTaking : AppRoutes
+    data class NoteTaking(
+        val id: String? = null
+    ) : AppRoutes
 
 
 }

@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,7 +51,7 @@ fun TimelineScreen(
                         .fillMaxWidth()
                         .height(90.dp)
                         .clickable {
-                            navController.navigate(AppRoutes.NoteTaking)
+                            navController.navigate(AppRoutes.NoteTaking(it.id))
                         }
                         .padding(16.dp)
                 ){

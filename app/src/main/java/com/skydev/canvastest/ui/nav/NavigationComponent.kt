@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.skydev.canvastest.ui.feature.notetaking.NoteTakingScreen
 import com.skydev.canvastest.ui.feature.notetaking.NoteTakingViewModel
 import com.skydev.canvastest.ui.feature.timeline.TimelineScreen
@@ -23,8 +24,10 @@ fun AppNavGraph(
     ) {
 
         composable<AppRoutes.NoteTaking> {
+            val id = it.toRoute<AppRoutes.NoteTaking>().id
             NoteTakingScreen(
                 viewModel = viewModel,
+                id = id,
             ) {
                 navController.navigateUp()
             }

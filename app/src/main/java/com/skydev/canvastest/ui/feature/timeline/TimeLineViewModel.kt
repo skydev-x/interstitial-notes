@@ -3,6 +3,7 @@ package com.skydev.canvastest.ui.feature.timeline
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.Notes
+import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.repo.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +20,17 @@ class TimeLineViewModel @Inject constructor(
 
     fun loadNotes() {
         viewModelScope.launch {
+            val notes = noteRepository.getNotes()
             _state.value = state.value.copy(
-                items = noteRepository.getNotes()
+                items = notes.map {
+                    NoteUi(
+                        id = it.id,
+                        title = it.title,
+                        createdAt = it.createdAt,
+                        updatedAt = it.updatedAt,
+                        strokes = it.strokeData
+                    )
+                }
             )
         }
     }
@@ -28,5 +38,5 @@ class TimeLineViewModel @Inject constructor(
 }
 
 data class TimeLineState(
-    val items: List<Notes> = emptyList(),
+    val items: List<NoteUi> = emptyList(),
 )

@@ -8,8 +8,10 @@ import javax.inject.Inject
 class NoteRepositoryImpl @Inject constructor(
     private val noteDao: NoteDao
 ) : NoteRepository {
-    override suspend fun insertNote(note: Notes) {
+    override suspend fun insertNote(note: Notes) : String {
         noteDao.insertNote(note)
+        val id = note.id
+        return id
     }
 
     override suspend fun getNotes(): List<Notes> {
