@@ -1,5 +1,9 @@
 package com.skydev.canvastest.ui.feature.notetaking
 
+import android.graphics.Bitmap
+import android.graphics.Bitmap.createBitmap
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -82,8 +86,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -91,6 +97,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.createBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydev.canvastest.domain.model.PointF
@@ -174,7 +181,7 @@ fun NoteTakingUi(
     onShare: () -> Unit,
     onDelete: () -> Unit,
     onRename: (String) -> Unit,
-    onStrokeComplete: (StrokeData) -> Unit,
+    onStrokeComplete: (StrokeData, Bitmap) -> Unit,
     canUndo: Boolean = strokes.isNotEmpty(),
 ) {
     var strokeColor by remember { mutableStateOf(Color.White) }
@@ -669,18 +676,20 @@ private fun ConfirmClearDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSec) } },
     )
 }
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SPenDrawingCanvas(
     modifier: Modifier = Modifier,
     strokes: List<StrokeData>,
     strokeColor: Color = Color.White,
     strokeWidth: Float = 5f,
-    onStrokeComplete: (StrokeData) -> Unit,
+    onStrokeComplete: (StrokeData, Bitmap) -> Unit,   // ← Bitmap added
 ) {
     var currentPath by remember { mutableStateOf<Path?>(null) }
     var currentPoints = remember { mutableListOf<PointF>() }
     var invalidate by remember { mutableIntStateOf(0) }
+    var canvasWidth by remember { mutableIntStateOf(0) }
+    var canvasHeight by remember { mutableIntStateOf(0) }
 
     val renderedPaths = remember(strokes) { strokes.map { it.toPath() } }
 
@@ -688,6 +697,10 @@ fun SPenDrawingCanvas(
         Canvas(
             modifier = modifier
                 .fillMaxSize()
+                .onSizeChanged { size ->          // ← track real px size
+                    canvasWidth = size.width
+                    canvasHeight = size.height
+                }
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
                         while (true) {
@@ -713,13 +726,18 @@ fun SPenDrawingCanvas(
                                     }
 
                                     !change.pressed && currentPath != null -> {
-                                        onStrokeComplete(
-                                            StrokeData(
-                                                points = currentPoints.toList(),
-                                                color = strokeColor.value.toLong(),
-                                                width = strokeWidth,
-                                            )
+                                        val completedStroke = StrokeData(
+                                            points = currentPoints.toList(),
+                                            color = strokeColor.value.toLong(),
+                                            width = strokeWidth,
                                         )
+                                        // Render full canvas including new stroke
+                                        val bitmap = renderToBitmap(
+                                            strokes = strokes + completedStroke,
+                                            width = canvasWidth,
+                                            height = canvasHeight,
+                                        )
+                                        onStrokeComplete(completedStroke, bitmap)
                                         currentPath = null
                                         currentPoints = mutableListOf()
                                     }
@@ -732,8 +750,7 @@ fun SPenDrawingCanvas(
         ) {
             @Suppress("UNUSED_EXPRESSION") invalidate
 
-            val baseStyle =
-                Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            val baseStyle = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
             renderedPaths.forEachIndexed { i, path ->
                 drawPath(
@@ -752,6 +769,47 @@ fun SPenDrawingCanvas(
             }
         }
     }
+}
+
+/**
+ * Offscreen render of all strokes into an android.graphics.Bitmap.
+ * Mirrors exactly what the Compose canvas draws.
+ */
+@RequiresApi(Build.VERSION_CODES.O)
+private fun renderToBitmap(
+    strokes: List<StrokeData>,
+    width: Int,
+    height: Int,
+): Bitmap {
+    if (width <= 0 || height <= 0) return createBitmap(1, 1)
+
+    val bitmap = createBitmap(width, height)
+    val canvas = android.graphics.Canvas(bitmap)
+    canvas.drawColor(android.graphics.Color.BLACK) // match Surface0 bg
+
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        style = android.graphics.Paint.Style.STROKE
+        strokeCap = android.graphics.Paint.Cap.ROUND
+        strokeJoin = android.graphics.Paint.Join.ROUND
+    }
+
+    strokes.forEach { stroke ->
+        paint.color = Color(stroke.color.toULong()).toArgb()
+        paint.strokeWidth = stroke.width
+
+        val path = android.graphics.Path()
+        val pts = stroke.points
+        if (pts.isNotEmpty()) {
+            path.moveTo(pts[0].x, pts[0].y)
+            for (i in 1 until pts.size) {
+                path.lineTo(pts[i].x, pts[i].y)
+            }
+        }
+        canvas.drawPath(path, paint)
+    }
+
+    return bitmap
 }
 
 @Composable

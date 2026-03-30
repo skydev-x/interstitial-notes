@@ -2,6 +2,7 @@ package com.skydev.canvastest.ui.feature.notetaking
 
 import android.app.Application
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,9 +22,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import androidx.core.graphics.scale
 
 @HiltViewModel
 class NoteTakingViewModel @Inject constructor(
@@ -92,6 +95,7 @@ class NoteTakingViewModel @Inject constructor(
         val snapshot = _strokes.value
         viewModelScope.launch(Dispatchers.IO) {
             val existingId = cachedNote?.id ?: Uuid.generateV7().toString()
+            currentId = existingId
             val note = cachedNote?.copy(
                 strokeData = snapshot,
                 updatedAt  = System.currentTimeMillis(),
@@ -123,11 +127,35 @@ class NoteTakingViewModel @Inject constructor(
         }
     }
 
-    fun onStrokeComplete(stroke: StrokeData) {
-        stack.clear()
-        _canRedo.value = false
-        _strokes.update { it + stroke }
-        persist()
+    fun onStrokeComplete(stroke: StrokeData,bitmap: Bitmap) {
+        viewModelScope.launch {
+            stack.clear()
+            _canRedo.value = false
+            _strokes.update { it + stroke }
+            persist()
+            withContext(Dispatchers.IO) {
+                val small = scaleBitmap(bitmap, maxPx = 768)
+                saveCanvasPng(small)
+                small.recycle()
+            }
+        }
+    }
+
+    private fun scaleBitmap(src: Bitmap, maxPx: Int): Bitmap {
+        val w = src.width
+        val h = src.height
+        if (w <= maxPx && h <= maxPx) return src
+        val ratio = minOf(maxPx.toFloat() / w, maxPx.toFloat() / h)
+        return src.scale((w * ratio).toInt(), (h * ratio).toInt())
+    }
+
+    private fun saveCanvasPng(bitmap: Bitmap) {
+        val noteId = _noteUi.value?.id ?: return
+        val file = File(app.filesDir, "${noteId}_canvas.png")
+        file.outputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+        }
+        Log.d("VM", "Canvas PNG saved: ${file.length() / 1024}KB → ${file.absolutePath}")
     }
 
     fun undo() {
