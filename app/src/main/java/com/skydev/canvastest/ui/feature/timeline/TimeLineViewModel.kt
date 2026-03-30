@@ -29,12 +29,7 @@ class TimeLineViewModel @Inject constructor(
         refreshKey.value++
     }
 
-    fun testRag(context: Context) {
-        viewModelScope.launch {
-            val answer = NoteRagService.test(context)
-            Log.d("RAG", "Answer: $answer")
-        }
-    }
+
 
 
     @OptIn(ExperimentalCoroutinesApi::class)

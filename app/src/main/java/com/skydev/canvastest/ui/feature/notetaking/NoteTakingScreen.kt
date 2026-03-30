@@ -84,6 +84,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -130,9 +131,10 @@ fun NoteTakingScreen(
     id: String? = null,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
     LaunchedEffect(id) {
         if (id != null) {
-            viewModel.load(id)
+            viewModel.load(id, context)
         }
     }
     val noteUi by viewModel.noteUi.collectAsStateWithLifecycle()

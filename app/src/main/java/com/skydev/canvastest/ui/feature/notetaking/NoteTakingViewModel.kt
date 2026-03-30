@@ -1,9 +1,12 @@
 package com.skydev.canvastest.ui.feature.notetaking
 
 import android.app.Application
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.Notes
+import com.skydev.canvastest.data.rag.NoteRagService
 import com.skydev.canvastest.domain.loadStrokesBinary
 import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.model.StrokeData
@@ -41,9 +44,18 @@ class NoteTakingViewModel @Inject constructor(
     private var cachedNote: Notes? = null
     private var currentId: String? = null
 
-    fun load(id: String) {
+
+    fun testRag(context: Context) {
+        viewModelScope.launch {
+            val answer = currentId?.let { NoteRagService.testWithHardcodedImage(context) }
+            Log.d("RAG", "Answer: $answer")
+        }
+    }
+
+    fun load(id: String,context: Context) {
         if (currentId == id) return
         currentId = id
+        testRag(context)
         viewModelScope.launch(Dispatchers.IO) {
             val note = noteRepository.getNoteById(id) ?: return@launch
             val strokes = loadStrokesBinary(app, id)
