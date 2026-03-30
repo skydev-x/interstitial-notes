@@ -8,7 +8,7 @@ import com.skydev.canvastest.data.model.Notes
 
 @Database(
     entities = [Notes::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

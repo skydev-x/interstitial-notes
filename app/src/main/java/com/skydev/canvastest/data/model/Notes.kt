@@ -11,6 +11,7 @@ data class Notes @OptIn(ExperimentalUuidApi::class) constructor(
     @PrimaryKey val id: String = Uuid.generateV7().toString(),
     val title: String,
     val strokeData: List<StrokeData>,
+    val description: String = "",
     val createdAt: Long,
     val updatedAt: Long,
 )

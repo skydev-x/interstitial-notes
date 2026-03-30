@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.core.graphics.scale
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.Notes
@@ -26,7 +27,6 @@ import java.io.File
 import javax.inject.Inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import androidx.core.graphics.scale
 
 @HiltViewModel
 class NoteTakingViewModel @Inject constructor(
@@ -36,6 +36,7 @@ class NoteTakingViewModel @Inject constructor(
 
     private val _strokes = MutableStateFlow<List<StrokeData>>(emptyList())
     val strokes = _strokes.asStateFlow()
+    private var _bitmap = MutableStateFlow<Bitmap?>(null)
 
     private val stack = ArrayDeque<StrokeData>()
     private val _canRedo = MutableStateFlow(false)
@@ -49,22 +50,28 @@ class NoteTakingViewModel @Inject constructor(
 
 
     fun testRag(context: Context) {
-        viewModelScope.launch {
-            val answer = currentId?.let { NoteRagService.testWithHardcodedImage(context) }
-            Log.d("RAG", "Answer: $answer")
+        viewModelScope.launch (Dispatchers.IO){
+            if (cachedNote != null) {
+                val answer = currentId?.let { NoteRagService.test(it, context) }
+                Log.d("RAG", "Answer: $answer")
+                withContext(Dispatchers.Main){
+                    _noteUi.update { it?.copy(description = answer.toString()) }
+                    cachedNote?.let { noteRepository.insertNote(it.copy(description = answer.toString())) }
+                }
+            }
         }
     }
 
-    fun load(id: String,context: Context) {
+    fun load(id: String, context: Context) {
         if (currentId == id) return
         currentId = id
-        testRag(context)
         viewModelScope.launch(Dispatchers.IO) {
             val note = noteRepository.getNoteById(id) ?: return@launch
             val strokes = loadStrokesBinary(app, id)
             cachedNote = note
             _strokes.value = strokes
             _noteUi.value = note.toUi(strokes)
+            testRag(context)
         }
     }
 
@@ -74,18 +81,18 @@ class NoteTakingViewModel @Inject constructor(
             val snapshot = _strokes.value
             val existingId = cachedNote?.id ?: Uuid.generateV7().toString()
             val updated = cachedNote?.copy(
-                title     = title,
+                title = title,
                 updatedAt = System.currentTimeMillis(),
             ) ?: Notes(
-                id        = existingId,
-                title     = title,
+                id = existingId,
+                title = title,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 strokeData = snapshot,
             )
             val newId = noteRepository.insertNote(updated)
-            cachedNote  = updated.copy(id = newId)
-            currentId   = newId
+            cachedNote = updated.copy(id = newId)
+            currentId = newId
             _noteUi.value = cachedNote!!.toUi(snapshot)
         }
     }
@@ -98,25 +105,30 @@ class NoteTakingViewModel @Inject constructor(
             currentId = existingId
             val note = cachedNote?.copy(
                 strokeData = snapshot,
-                updatedAt  = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
             ) ?: Notes(
-                id         = existingId,
-                title      = System.currentTimeMillis().toFormattedDate(),
-                createdAt  = System.currentTimeMillis(),
-                updatedAt  = System.currentTimeMillis(),
+                id = existingId,
+                title = System.currentTimeMillis().toFormattedDate(),
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
                 strokeData = snapshot,
             )
             val newId = noteRepository.insertNote(note)
             cachedNote = note.copy(id = newId)
-            currentId  = newId
+            currentId = newId
             saveStrokesBinary(app, newId, snapshot)
+            withContext(Dispatchers.IO) {
+                saveCanvasPng()
+            }.runCatching {
+                Log.d("VM", "Canvas PNG saved: fail")
+            }
         }
     }
 
     fun delete(onDone: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(Dispatchers.IO) {
             cachedNote?.let { noteRepository.deleteNote(it.id) }
-            withContext(Dispatchers.Main){
+            withContext(Dispatchers.Main) {
                 cachedNote = null
                 currentId = null
                 _noteUi.value = null
@@ -127,17 +139,13 @@ class NoteTakingViewModel @Inject constructor(
         }
     }
 
-    fun onStrokeComplete(stroke: StrokeData,bitmap: Bitmap) {
+    fun onStrokeComplete(stroke: StrokeData, bitmap: Bitmap) {
         viewModelScope.launch {
             stack.clear()
             _canRedo.value = false
             _strokes.update { it + stroke }
+            _bitmap.update { bitmap }
             persist()
-            withContext(Dispatchers.IO) {
-                val small = scaleBitmap(bitmap, maxPx = 768)
-                saveCanvasPng(small)
-                small.recycle()
-            }
         }
     }
 
@@ -149,11 +157,13 @@ class NoteTakingViewModel @Inject constructor(
         return src.scale((w * ratio).toInt(), (h * ratio).toInt())
     }
 
-    private fun saveCanvasPng(bitmap: Bitmap) {
+    private fun saveCanvasPng() {
+        val bitmap = _bitmap.value ?: return
+        val src = scaleBitmap(bitmap, maxPx = 768)
         val noteId = _noteUi.value?.id ?: return
         val file = File(app.filesDir, "${noteId}_canvas.png")
         file.outputStream().use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+            src.compress(Bitmap.CompressFormat.PNG, 90, out)
         }
         Log.d("VM", "Canvas PNG saved: ${file.length() / 1024}KB → ${file.absolutePath}")
     }
@@ -187,4 +197,9 @@ class NoteTakingViewModel @Inject constructor(
         updatedAt = updatedAt,
         strokes = strokes,
     )
+
+    override fun onCleared() {
+        super.onCleared()
+        persist()
+    }
 }

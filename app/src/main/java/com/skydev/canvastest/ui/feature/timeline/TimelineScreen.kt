@@ -61,6 +61,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.skydev.canvastest.domain.model.NoteUi
+import com.skydev.canvastest.ui.feature.notetaking.CanvasPreviewImage
 import com.skydev.canvastest.ui.nav.AppRoutes
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -369,6 +370,10 @@ private fun NoteCard(
                     label = note.createdAt.toFormattedDate(),
                 )
             }
+            CanvasPreviewImage(
+                noteId = note.id,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }

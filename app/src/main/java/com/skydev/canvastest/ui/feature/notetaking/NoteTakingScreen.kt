@@ -89,6 +89,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -100,6 +101,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.skydev.canvastest.domain.model.PointF
 import com.skydev.canvastest.domain.model.StrokeData
 import com.skydev.canvastest.domain.model.toPath
@@ -115,6 +117,7 @@ import com.skydev.canvastest.ui.theme.TextPri
 import com.skydev.canvastest.ui.theme.TextSec
 import com.skydev.canvastest.ui.utils.isForAll
 import com.skydev.canvastest.ui.utils.isForStylus
+import java.io.File
 
 
 private val Palette = listOf(
@@ -812,6 +815,31 @@ private fun renderToBitmap(
     return bitmap
 }
 
+@Composable
+fun CanvasPreviewImage(
+    noteId: String?,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    val file = remember(noteId) {
+        noteId?.let {
+            File(context.filesDir, "${it}_canvas.png")
+        }
+    }
+
+    if (file == null || !file.exists()) {
+        Text("No preview available")
+        return
+    }
+
+    AsyncImage(
+        model = file,
+        contentDescription = "Canvas Preview",
+        modifier = modifier.fillMaxSize(),
+        contentScale = ContentScale.Fit
+    )
+}
 @Composable
 fun RenameDialog(
     currentTitle: String,

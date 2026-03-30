@@ -29,9 +29,6 @@ class TimeLineViewModel @Inject constructor(
         refreshKey.value++
     }
 
-
-
-
     @OptIn(ExperimentalCoroutinesApi::class)
     val notes = refreshKey.flatMapLatest {
         flow {
