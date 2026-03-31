@@ -8,6 +8,7 @@ import androidx.core.graphics.scale
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.Notes
+import com.skydev.canvastest.data.model.toUi
 import com.skydev.canvastest.data.rag.NoteRagService
 import com.skydev.canvastest.domain.loadStrokesBinary
 import com.skydev.canvastest.domain.model.NoteUi
@@ -55,7 +56,6 @@ class NoteTakingViewModel @Inject constructor(
                 val answer = currentId?.let { NoteRagService.test(it, context) }
                 Log.d("RAG", "Answer: $answer")
                 withContext(Dispatchers.Main){
-                    _noteUi.update { it?.copy(description = answer.toString()) }
                     cachedNote?.let { noteRepository.insertNote(it.copy(description = answer.toString())) }
                 }
             }
@@ -190,13 +190,6 @@ class NoteTakingViewModel @Inject constructor(
         persist()
     }
 
-    private fun Notes.toUi(strokes: List<StrokeData>) = NoteUi(
-        id = id,
-        title = title,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        strokes = strokes,
-    )
 
     override fun onCleared() {
         super.onCleared()

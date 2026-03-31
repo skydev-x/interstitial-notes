@@ -7,7 +7,9 @@ import kotlinx.serialization.Serializable
 data class NoteUi(
     val id: String,
     val title: String,
-    val description: String = "",
+    val transcribedText: String = "",
+    val summary: String = "",
+    val isEmpty: Boolean = true,
     val createdAt: Long,
     val updatedAt: Long,
     val strokes: List<StrokeData>

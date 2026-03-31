@@ -1,10 +1,8 @@
 package com.skydev.canvastest.ui.feature.timeline
 
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.skydev.canvastest.data.rag.NoteRagService
+import com.skydev.canvastest.data.model.toUi
 import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.repo.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +13,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,13 +34,7 @@ class TimeLineViewModel @Inject constructor(
         }
             .map { list ->
                 list.map {
-                    NoteUi(
-                        id = it.id,
-                        title = it.title,
-                        createdAt = it.createdAt,
-                        updatedAt = it.updatedAt,
-                        strokes = it.strokeData
-                    )
+                  it.toUi()
                 }.sortedByDescending { it.createdAt }
             }
     }
