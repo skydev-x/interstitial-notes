@@ -1,5 +1,6 @@
 package com.skydev.canvastest.ui.feature.timeline
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydev.canvastest.data.model.toUi
@@ -34,7 +35,9 @@ class TimeLineViewModel @Inject constructor(
         }
             .map { list ->
                 list.map {
+                    Log.d("TimeLineViewModel", "note: ${it.description}")
                   it.toUi()
+
                 }.sortedByDescending { it.createdAt }
             }
     }

@@ -28,18 +28,26 @@ fun Notes.toUi(strokes: List<StrokeData> = emptyList()) = NoteUi(
 )
 fun parseTomlDescription(raw: String): Triple<String, String, Boolean> {
     val cleaned = raw
-        .removePrefix("```toml").removePrefix("```")
+        .removePrefix("```toml")
+        .removePrefix("```")
         .removeSuffix("```")
         .trim()
 
     fun extractString(key: String): String =
-        Regex("""$key\s*=\s*"([^"]*)"""")   // ← closing " is escaped, no stray )
-            .find(cleaned)?.groupValues?.get(1)?.trim() ?: ""
+        Regex("""\b$key\s*=\s*"([^"]*)"""")
+            .find(cleaned)
+            ?.groupValues?.getOrNull(1)
+            ?.trim()
+            ?: ""
 
-    val text    = extractString("transcribed_text")
+    val text = extractString("transcribed_text")
     val summary = extractString("summary")
-    val empty   = Regex("""empty\s*=\s*(true|false)""")
-        .find(cleaned)?.groupValues?.get(1) != "false"
+
+    val empty = Regex("""\bempty\s*=\s*(true|false)""")
+        .find(cleaned)
+        ?.groupValues?.getOrNull(1)
+        ?.toBooleanStrictOrNull()
+        ?: false
 
     return Triple(text, summary, empty)
 }
