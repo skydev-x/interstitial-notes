@@ -150,6 +150,7 @@ fun NoteTakingScreen(
     val noteUi by viewModel.noteUi.collectAsStateWithLifecycle()
     val strokes by viewModel.strokes.collectAsStateWithLifecycle()
     val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
+    val llmStatus by viewModel.ragStatus.collectAsStateWithLifecycle()
     NoteTakingUi(
         projectTitle = noteUi?.title ?: run { "Untitled" },
         strokes = strokes,
@@ -157,6 +158,7 @@ fun NoteTakingScreen(
         onUndo = viewModel::undo,
         onRedo = viewModel::redo,
         onClear = viewModel::clear,
+        llmStatus = llmStatus,
         canRedo = canRedo,
         onSave = viewModel::persist,
         onShare = {},
@@ -176,6 +178,7 @@ fun NoteTakingUi(
     strokes: List<StrokeData>,
     modifier: Modifier = Modifier,
     canRedo: Boolean = false,
+    llmStatus: String? = null,
     onBack: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -220,7 +223,7 @@ fun NoteTakingUi(
         containerColor = Surface0,
         topBar = {
             DrawingTopBar(
-                title = projectTitle,
+                title = projectTitle + llmStatus.toString(),
                 menuExpanded = menuExpanded,
                 onMenuToggle = { menuExpanded = it },
                 onBack = onBack,

@@ -7,6 +7,12 @@ import android.util.Log
 import androidx.core.graphics.scale
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.skydev.canvastest.data.model.Notes
 import com.skydev.canvastest.data.model.toUi
 import com.skydev.canvastest.data.rag.NoteRagService
@@ -16,6 +22,7 @@ import com.skydev.canvastest.domain.model.StrokeData
 import com.skydev.canvastest.domain.repo.NoteRepository
 import com.skydev.canvastest.domain.saveStrokesBinary
 import com.skydev.canvastest.ui.feature.timeline.toFormattedDate
+import com.skydev.canvastest.worker.LlmWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +32,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -62,6 +70,41 @@ class NoteTakingViewModel @Inject constructor(
         }
     }
 
+
+    fun triggerLlmProcessing(context: Context) {
+        val noteId = currentId ?: return
+
+        val request = OneTimeWorkRequestBuilder<LlmWorker>()
+            .setInputData(workDataOf(LlmWorker.KEY_NOTE_ID to noteId))
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(
+                "llm_$noteId",
+                ExistingWorkPolicy.KEEP,
+                request
+            )
+
+        viewModelScope.launch(Dispatchers.Main) {
+            WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWorkLiveData("rag_$noteId")
+                .observeForever { infos ->
+                    val info = infos?.firstOrNull() ?: return@observeForever
+                    val status = info.progress.getString(LlmWorker.KEY_STATUS)
+                    _ragStatus.value = status
+                }
+        }
+    }
+
+    private val _ragStatus = MutableStateFlow<String?>(null)
+    val ragStatus: StateFlow<String?> = _ragStatus.asStateFlow()
+
     fun load(id: String, context: Context) {
         if (currentId == id) return
         currentId = id
@@ -71,7 +114,7 @@ class NoteTakingViewModel @Inject constructor(
             cachedNote = note
             _strokes.value = strokes
             _noteUi.value = note.toUi(strokes)
-            testRag(context)
+            triggerLlmProcessing(context)
         }
     }
 
