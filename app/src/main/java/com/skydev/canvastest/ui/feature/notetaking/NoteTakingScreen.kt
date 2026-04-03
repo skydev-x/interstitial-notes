@@ -127,7 +127,7 @@ private val Palette = listOf(
     Color(0xFFFF9800), Color(0xFFE91E63), Color(0xFF00BCD4),
 )
 
-private enum class DrawTool(val icon: ImageVector, val label: String) {
+enum class DrawTool(val icon: ImageVector, val label: String) {
     PEN(Icons.Rounded.Edit, "Pen"),
     MARKER(Icons.Rounded.Star, "Marker"),
     ERASER(Icons.Rounded.ShoppingCart, "Eraser"),
@@ -248,6 +248,7 @@ fun NoteTakingUi(
             SPenDrawingCanvas(
                 modifier = Modifier.fillMaxSize(),
                 strokes = strokes,
+                currentTool = activeTool,
                 strokeColor = strokeColor,
                 strokeWidth = strokeWidth,
                 onStrokeComplete = onStrokeComplete,
@@ -686,10 +687,11 @@ private fun ConfirmClearDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 @Composable
 fun SPenDrawingCanvas(
     modifier: Modifier = Modifier,
+    currentTool: DrawTool = DrawTool.PEN,
     strokes: List<StrokeData>,
     strokeColor: Color = Color.White,
     strokeWidth: Float = 5f,
-    onStrokeComplete: (StrokeData, Bitmap) -> Unit,   // ← Bitmap added
+    onStrokeComplete: (StrokeData, Bitmap) -> Unit,
 ) {
     var currentPath by remember { mutableStateOf<Path?>(null) }
     var currentPoints = remember { mutableListOf<PointF>() }
@@ -699,11 +701,11 @@ fun SPenDrawingCanvas(
 
     val renderedPaths = remember(strokes) { strokes.map { it.toPath() } }
 
-    key(strokeColor) {
+    key(strokeColor,currentTool) {
         Canvas(
             modifier = modifier
                 .fillMaxSize()
-                .onSizeChanged { size ->          // ← track real px size
+                .onSizeChanged { size ->
                     canvasWidth = size.width
                     canvasHeight = size.height
                 }
@@ -713,7 +715,7 @@ fun SPenDrawingCanvas(
                             val event = awaitPointerEvent()
                             val change = event.changes.first()
 
-                            if (change.type.isForStylus()) {
+                            if (if(currentTool == DrawTool.PEN) change.type.isForStylus() else change.type.isForAll()) {
                                 val pos = change.position
                                 when {
                                     change.pressed && currentPath == null -> {
@@ -737,7 +739,6 @@ fun SPenDrawingCanvas(
                                             color = strokeColor.value.toLong(),
                                             width = strokeWidth,
                                         )
-                                        // Render full canvas including new stroke
                                         val bitmap = renderToBitmap(
                                             strokes = strokes + completedStroke,
                                             width = canvasWidth,

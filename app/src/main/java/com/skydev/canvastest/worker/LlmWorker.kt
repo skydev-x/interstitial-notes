@@ -28,17 +28,11 @@ class LlmWorker @AssistedInject constructor(
         val noteId = inputData.getString(KEY_NOTE_ID) ?: return Result.failure()
 
         return try {
-            // 1. Properly set ForegroundInfo with Service Type
             setForeground(createForegroundInfo(noteId))
             setProgress(workDataOf(KEY_STATUS to STATUS_RUNNING))
-
-            // 2. Process LLM
             val result = LlmService.process(noteId, applicationContext)
-
-            // 3. Update DB
             val note = noteRepository.getNoteById(noteId) ?: return Result.failure()
             noteRepository.insertNote(note.copy(description = result))
-
             setProgress(workDataOf(KEY_STATUS to STATUS_DONE))
             Log.d(TAG, "RAG complete for $noteId")
             Result.success()
@@ -51,16 +45,14 @@ class LlmWorker @AssistedInject constructor(
 
     private fun createForegroundInfo(noteId: String): ForegroundInfo {
         createChannel()
-
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setContentTitle("Processing Note")
             .setContentText("Running AI analysis...")
-            .setSmallIcon(android.R.drawable.ic_menu_upload) // Update to your actual drawable
+            .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setOngoing(true)
             .setSilent(true)
             .build()
 
-        // Use the 3-arg constructor to define the service type
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
                 noteId.hashCode(),
