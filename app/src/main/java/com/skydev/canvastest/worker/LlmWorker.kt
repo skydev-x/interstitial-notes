@@ -12,6 +12,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.skydev.canvastest.data.objectbox.NoteObject
+import com.skydev.canvastest.data.objectbox.ObjectBox
 import com.skydev.canvastest.domain.llm.LlmService
 import com.skydev.canvastest.domain.repo.NoteRepository
 import dagger.assisted.Assisted
@@ -33,6 +35,12 @@ class LlmWorker @AssistedInject constructor(
             val result = LlmService.process(noteId, applicationContext)
             val note = noteRepository.getNoteById(noteId) ?: return Result.failure()
             noteRepository.insertNote(note.copy(description = result))
+            val noteObjectStore = ObjectBox.store.boxFor(NoteObject::class.java)
+            noteObjectStore.put(NoteObject(
+                id = note.createdAt,
+                name = note.title,
+                data = result,
+            ))
             setProgress(workDataOf(KEY_STATUS to STATUS_DONE))
             Log.d(TAG, "RAG complete for $noteId")
             Result.success()

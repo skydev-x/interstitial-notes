@@ -10,6 +10,7 @@ kotlin = "2.3.20"
 composeBom = "2024.09.00"
 kotlinxSerialization = "1.7.3"
 hilt-navigation-compose = "1.2.0"
+objectbox = "5.4.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,5 +34,7 @@ androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-com
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+objectbox = { id = "io.objectbox", version.ref = "objectbox" }
 
 

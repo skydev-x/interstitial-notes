@@ -45,6 +45,8 @@ object LlmService {
                 )
             )
             response.contents.contents.joinToString("") { it.toString() }.trim()
+        }.also {
+            LlmEngineHolder.release()
         }
     }
 

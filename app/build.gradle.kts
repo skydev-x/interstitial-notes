@@ -5,6 +5,8 @@ plugins {
     kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.objectbox)
 }
 
 android {
@@ -31,15 +33,15 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
     }
 }
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -64,6 +66,11 @@ dependencies {
     implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    val objectboxVersion = "5.4.1"
+    debugImplementation("io.objectbox:objectbox-android-objectbrowser:$objectboxVersion")
+    releaseImplementation("io.objectbox:objectbox-android:$objectboxVersion")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
