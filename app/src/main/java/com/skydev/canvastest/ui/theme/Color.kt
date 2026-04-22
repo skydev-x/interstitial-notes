@@ -1,6 +1,7 @@
 package com.skydev.canvastest.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
@@ -20,3 +21,8 @@ val TextSec     = Color(0xFF8888A0)
 val Accent      = Color(0xFF7C6EFA)
 val AccentSoft  = Color(0x337C6EFA)
 val Danger      = Color(0xFFFA6E6E)
+// ── Palette ───────────────────────────────────────────────────────────────────
+
+val Bg         = Color(0xFF0A0A0F)
+val Border     = Color(0xFF252532)
+val TextTer    = Color(0xFF44445A)

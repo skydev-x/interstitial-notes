@@ -32,11 +32,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,10 +58,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,7 +67,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.skydev.canvastest.domain.model.NoteUi
+import com.skydev.canvastest.ui.feature.timeline.components.EmptyState
 import com.skydev.canvastest.ui.nav.AppRoutes
+import com.skydev.canvastest.ui.theme.Accent
+import com.skydev.canvastest.ui.theme.AccentSoft
+import com.skydev.canvastest.ui.theme.Bg
+import com.skydev.canvastest.ui.theme.Border
+import com.skydev.canvastest.ui.theme.Surface1
+import com.skydev.canvastest.ui.theme.Surface2
+import com.skydev.canvastest.ui.theme.TextPri
+import com.skydev.canvastest.ui.theme.TextSec
+import com.skydev.canvastest.ui.theme.TextTer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -80,23 +85,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ── Palette ───────────────────────────────────────────────────────────────────
-
-private val Bg         = Color(0xFF0A0A0F)
-private val Surface1   = Color(0xFF13131A)
-private val Surface2   = Color(0xFF1C1C26)
-private val Border     = Color(0xFF252532)
-private val TextPri    = Color(0xFFF0F0F5)
-private val TextSec    = Color(0xFF8080A0)
-private val TextTer    = Color(0xFF44445A)
-private val Accent     = Color(0xFF7C6EFA)
-private val AccentSoft = Color(0x207C6EFA)
-private val Mono       = FontFamily.Monospace
 
 // ✅ Single source of truth for all sizing — change here, reflects everywhere
 private val CARD_IMAGE_HEIGHT = 160.dp   // fixed image area, ~55% of typical card
-private val CARD_GAP          = 16.dp    // uniform gap between every card
-private val RAIL_LINE_HEIGHT  = CARD_IMAGE_HEIGHT + CARD_GAP  // connector always matches
+private val CARD_GAP = 16.dp    // uniform gap between every card
+private val RAIL_LINE_HEIGHT = CARD_IMAGE_HEIGHT + CARD_GAP  // connector always matches
 
 private val RailColors = listOf(
     Color(0xFF7C6EFA), Color(0xFF6EFAC3), Color(0xFFFA6E6E),
@@ -133,7 +126,6 @@ fun TimelineScreen(
                             else "${notes.size} note${if (notes.size == 1) "" else "s"}",
                             color = TextSec,
                             fontSize = 11.sp,
-                            fontFamily = Mono,
                         )
                     }
                 },
@@ -148,7 +140,9 @@ fun TimelineScreen(
             )
         },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
             if (notes.isEmpty()) {
                 EmptyState(
                     onNewNote = { navController.navigate(AppRoutes.NoteTaking()) },
@@ -304,9 +298,9 @@ private fun NoteCard(
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                0f   to Color.Transparent,
+                                0f to Color.Transparent,
                                 0.4f to Color.Transparent,
-                                1f   to Bg.copy(alpha = 0.95f),
+                                1f to Bg.copy(alpha = 0.95f),
                             )
                         ),
                 )
@@ -329,7 +323,6 @@ private fun NoteCard(
                         text = formatDate(note.updatedAt),
                         color = TextSec,
                         fontSize = 10.sp,
-                        fontFamily = Mono,
                         letterSpacing = 0.3.sp,
                     )
                 }
@@ -366,7 +359,7 @@ private fun NoteCard(
                             .background(Surface2.copy(alpha = 0.85f))
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                     ) {
-                        Text("empty", color = TextTer, fontSize = 9.sp, fontFamily = Mono)
+                        Text("empty", color = TextTer, fontSize = 9.sp)
                     }
                 }
             }
@@ -401,7 +394,6 @@ private fun NoteCard(
                                 "∑",
                                 color = Accent,
                                 fontSize = 11.sp,
-                                fontFamily = Mono,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
@@ -427,7 +419,6 @@ private fun NoteCard(
                                 "// transcribed",
                                 color = TextTer,
                                 fontSize = 9.sp,
-                                fontFamily = Mono,
                                 letterSpacing = 0.5.sp,
                             )
                             Text(
@@ -435,7 +426,6 @@ private fun NoteCard(
                                 color = TextSec,
                                 fontSize = 12.sp,
                                 lineHeight = 19.sp,
-                                fontFamily = Mono,
                                 fontStyle = FontStyle.Italic,
                             )
                         }
@@ -445,7 +435,6 @@ private fun NoteCard(
                         text = "created ${note.createdAt.toFormattedDate()}",
                         color = TextTer,
                         fontSize = 9.sp,
-                        fontFamily = Mono,
                         modifier = Modifier.padding(bottom = 2.dp),
                     )
                 }
@@ -454,54 +443,18 @@ private fun NoteCard(
     }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun EmptyState(onNewNote: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape)
-                .background(AccentSoft)
-                .border(1.dp, Border, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Rounded.Edit, contentDescription = null, tint = Accent, modifier = Modifier.size(36.dp))
-        }
-        Spacer(Modifier.height(28.dp))
-        Text("nothing here yet", color = TextPri, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFamily = Mono)
-        Spacer(Modifier.height(8.dp))
-        Text("your notes will appear as a timeline", color = TextSec, fontSize = 13.sp, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(36.dp))
-        Button(
-            onClick = onNewNote,
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Accent),
-            modifier = Modifier.height(48.dp),
-        ) {
-            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("create first note", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-        }
-    }
-}
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
 private fun formatDate(ts: Long): String {
     val diff = System.currentTimeMillis() - ts
     return when {
-        diff < 60_000L         -> "just now"
-        diff < 3_600_000L      -> "${diff / 60_000}m ago"
-        diff < 86_400_000L     -> "${diff / 3_600_000}h ago"
+        diff < 60_000L -> "just now"
+        diff < 3_600_000L -> "${diff / 60_000}m ago"
+        diff < 86_400_000L -> "${diff / 3_600_000}h ago"
         diff < 2 * 86_400_000L -> "yesterday"
         diff < 7 * 86_400_000L -> SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(ts))
-        else                   -> SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(ts))
+        else -> SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(ts))
     }
 }
 
