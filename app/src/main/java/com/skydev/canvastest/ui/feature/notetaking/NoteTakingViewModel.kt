@@ -21,7 +21,7 @@ import com.skydev.canvastest.domain.model.NoteUi
 import com.skydev.canvastest.domain.model.StrokeData
 import com.skydev.canvastest.domain.repo.NoteRepository
 import com.skydev.canvastest.domain.saveStrokesBinary
-import com.skydev.canvastest.ui.feature.timeline.toFormattedDate
+import com.skydev.canvastest.ui.feature.timeline.components.toFormattedDate
 import com.skydev.canvastest.worker.LlmWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
